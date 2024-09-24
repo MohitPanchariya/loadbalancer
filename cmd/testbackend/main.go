@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"log"
 	"net/http"
@@ -15,8 +16,11 @@ func hello(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
+	port := flag.String("port", "", "port to run the HTTP server on")
+	flag.Parse()
+
 	http.HandleFunc("/", hello)
-	err := http.ListenAndServe(":6000", nil)
+	err := http.ListenAndServe(fmt.Sprintf(":%s", *port), nil)
 	if err != nil {
 		fmt.Println(err)
 	}
