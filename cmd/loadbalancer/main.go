@@ -34,20 +34,36 @@ type LoadBalancer struct {
 // a health check.
 func (s *Scheduler) serverHealthCheck(period <-chan time.Time) {
 	for range period {
+		// Parallely perform health checks on all the servers.
+		// Mark the unhealthy servers
+		wg := sync.WaitGroup{}
+		for i := 0; i < len(s.servers); i++ {
+			wg.Add(1)
+			go func() {
+				res, err := http.Get(fmt.Sprintf("%s/healthcheck", s.servers[i].addr))
+				if err != nil || res.Status != "200 OK" {
+					s.servers[i].healthy = false
+				} else {
+					s.servers[i].healthy = true
+				}
+				wg.Done()
+			}()
+		}
+
+		// Wait for all the go routines to finish the health check
+		wg.Wait()
+
 		unhealthyCounter := 0
 		i := 0
 
 		s.serverLock.Lock()
 		for i < len(s.servers)-unhealthyCounter {
-			res, err := http.Get(fmt.Sprintf("%s/healthcheck", s.servers[i].addr))
-			if err != nil || res.Status != "200 OK" {
+			if !s.servers[i].healthy {
 				log.Printf("server: %s found to be unhealthy\n", s.servers[i].addr)
 				unhealthyCounter++
-				s.servers[i].healthy = false
 				// Push the unhealthy server to the end
 				s.servers[i], s.servers[len(s.servers)-unhealthyCounter] = s.servers[len(s.servers)-unhealthyCounter], s.servers[i]
 			} else { // move onto next server if current server is healthy
-				s.servers[i].healthy = true
 				i++
 			}
 		}
