@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/MohitPanchariya/loadbalancer/shared"
 )
@@ -12,7 +13,8 @@ import (
 func hello(w http.ResponseWriter, r *http.Request) {
 	log.Print(shared.NewRequestInfo(r))
 	log.Println("Replied with a hello message")
-	fmt.Fprintf(w, "Hello From Backend Server %s", *port)
+	time.Sleep(time.Duration(*sleep) * time.Microsecond)
+	fmt.Fprintf(w, "Hello From Backend Server %s\n", *port)
 }
 
 func healthCheck(w http.ResponseWriter, r *http.Request) {
@@ -22,6 +24,7 @@ func healthCheck(w http.ResponseWriter, r *http.Request) {
 }
 
 var port = flag.String("port", "", "port to run the HTTP server on")
+var sleep = flag.Int("sleep", 0, "time to sleep before responding")
 
 func main() {
 

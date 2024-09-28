@@ -9,7 +9,7 @@ import (
 )
 
 type LoadBalancer struct {
-	Scheduler *Scheduler
+	Scheduler Scheduler
 }
 
 // Forward a http request to one of the healthy servers

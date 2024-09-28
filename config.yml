@@ -9,3 +9,6 @@ port: 80
 
 # Health check frequency in seconds
 frequency: 10
+
+# Loadbalancing algorithm
+algorithm: "roundrobin"

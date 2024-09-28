@@ -9,18 +9,28 @@ import (
 	"os"
 	"time"
 
+	"github.com/MohitPanchariya/loadbalancer/schedulers"
+	"github.com/MohitPanchariya/loadbalancer/shared"
 	"gopkg.in/yaml.v3"
 )
 
-type Config struct {
-	Servers   []string // List of servers
-	Port      int      // Loadbalancer port
-	Frequency int      // Health check frequency in seconds
+type Scheduler interface {
+	ServerHealthCheck(period <-chan time.Time)
+	ScheduleRequest(r *http.Request) (*http.Response, error)
 }
 
-type Server struct {
-	addr    string // Adderss of the server
-	healthy bool   // Health status of the server
+// Returns a scheduler that implements the algorithm specified in the config
+func getScheduler(config *shared.Config) (Scheduler, error) {
+	algorithm := config.Algorithm
+	fmt.Println(algorithm)
+	switch algorithm {
+	case "roundrobin":
+		return schedulers.NewRoundRobinScheduler(config), nil
+	case "averageresponsetime":
+		return schedulers.NewAverageResponseTime(config), nil
+	default:
+		return nil, fmt.Errorf("%s scheduler not found", algorithm)
+	}
 }
 
 func main() {
@@ -37,14 +47,19 @@ func main() {
 	}
 	defer fd.Close()
 
-	config := &Config{}
+	config := &shared.Config{}
 	decoder := yaml.NewDecoder(fd)
 	err = decoder.Decode(config)
 	if err != nil {
 		log.Fatalf("Error unmarshalling config.\n %s", err)
 	}
 
-	scheduler := NewScheduler(config)
+	scheduler, err := getScheduler(config)
+
+	if err != nil {
+		log.Fatalf("Failed to get scheduler.\n%s\n", err)
+	}
+
 	loadbalancer := LoadBalancer{
 		Scheduler: scheduler,
 	}
