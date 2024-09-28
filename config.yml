@@ -1,0 +1,11 @@
+# List of servers
+servers:
+  - "http://localhost:9000"
+  - "http://localhost:9001"
+  - "http://localhost:9002"
+
+# Loadbalancer port
+port: 80
+
+# Health check frequency in seconds
+frequency: 10
